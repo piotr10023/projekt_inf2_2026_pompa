@@ -1,4 +1,4 @@
-import sys
+﻿import sys
 from PyQt5.QtWidgets import QApplication, QWidget, QVBoxLayout, QSlider, QLabel, QHBoxLayout
 from PyQt5.QtCore import Qt, QTimer, QPointF, QRectF 
 from PyQt5.QtGui import QPainter, QColor, QPen, QPainterPath
@@ -7,16 +7,16 @@ from PyQt5.QtGui import QPainter, QColor, QPen, QPainterPath
 class Krany(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(300, 250)
+        self.setMinimumSize(100, 215)
 
         # Parametry geometryczne
-        self.top_trapez_h = 60
-        self.rect_h = 200
-        self.bot_trapez_h = 60
+        self.top_trapez_h = 30
+        self.rect_h = 100
+        self.bot_trapez_h = 30
 
-        self.width_top = 200
-        self.width_mid = 140
-        self.width_bot = 40
+        self.width_top = 100
+        self.width_mid = 70
+        self.width_bot = 20
 
         self.total_tank_height = self.top_trapez_h + self.rect_h + self.bot_trapez_h
 
@@ -44,7 +44,7 @@ class Krany(QWidget):
         cx = self.draw_x + (self.width_top / 2)
         start_y = self.draw_y
 
-        # kszta�t zbiornika
+        # kształt zbiornika
         path = QPainterPath()
 
         p1_tl = QPointF(cx - self.width_top / 2, start_y)
@@ -201,7 +201,7 @@ class Zbiornik:
 
 
 class pompa:
-    def __init__(self, x, y, width=100, height=140, nazwa=""):
+    def __init__(self, x, y, width=50, height=70, nazwa=""):
         self.x = x
         self.y = y
         self.width = width
@@ -275,6 +275,21 @@ class pompa:
         self.aktualna_ilosc = 0.0
         self.aktualizuj_poziom()
 
+class ScenaInstalacji(QWidget):
+    def __init__(self, pompa, parent=None):
+        super().__init__(parent)
+        self.pompa = pompa
+        self.setMinimumSize(400, 200)
+        self.setStyleSheet("background-color: #222;")
+
+    def paintEvent(self, event):
+        painter = QPainter(self)
+        painter.setRenderHint(QPainter.Antialiasing)
+
+       
+        self.pompa.draw(painter)
+
+
 
 
 
@@ -287,17 +302,33 @@ class MainWindow(QWidget):
         self.setWindowTitle("Laboratorium: Zbiornik PyQt")
         self.resize(1500, 900)
         uklad_pionowy_calosc = QVBoxLayout()
+
+        from PyQt5.QtCore import QTimer
+
+        self.timer = QTimer()
+        self.timer.timeout.connect(self.krok_symulacji)
+
+        
+
+
+        self.running = False
+        self.predkosc_opadania = 0.005  # ile poziomu ubywa na krok
+
+        from PyQt5.QtWidgets import QPushButton
+        self.btn_start = QPushButton("START")
+        self.btn_start.clicked.connect(self.start_stop)
+        uklad_pionowy_calosc.addWidget(self.btn_start)
         
         uklad_kranow = QHBoxLayout()
 
         lewy_uklad = QVBoxLayout()
 
         # --- kran 1 ---
-        self.slider1 = QSlider(Qt.Orientation.Horizontal) # Pami�taj o Orientation
+        self.slider1 = QSlider(Qt.Orientation.Horizontal) 
         self.slider1.setRange(0, 100)
         self.slider1.setValue(50)
         self.slider1.valueChanged.connect(self.zmien_poziom1)
-        lewy_uklad.addWidget(self.slider1) # Dodajemy do lewy_uklad, a nie "layout"
+        lewy_uklad.addWidget(self.slider1) 
 
         self.label1 = QLabel("Poziom: 50%")
         self.label1.setAlignment(Qt.AlignCenter)
@@ -330,21 +361,17 @@ class MainWindow(QWidget):
         uklad_pionowy_calosc.addLayout(uklad_kranow)
         
 
-        from PyQt5.QtCore import QTimer
-
-        self.timer = QTimer()
-        self.timer.timeout.connect(self.krok_symulacji)
-
         
 
+        self.pompa = pompa(450, 50, width=50, height=70, nazwa="POMPA")
+        self.pompa.aktualna_ilosc = 0.0
+        self.pompa.aktualizuj_poziom()
+        print(self.pompa.aktualna_ilosc)
+        self.scena = ScenaInstalacji(self.pompa)
+        uklad_pionowy_calosc.addWidget(self.scena)
 
-        self.running = False
-        self.predkosc_opadania = 0.005  # ile poziomu ubywa na krok
 
-        from PyQt5.QtWidgets import QPushButton
-        self.btn_start = QPushButton("START")
-        self.btn_start.clicked.connect(self.start_stop)
-        uklad_pionowy_calosc.addWidget(self.btn_start)
+
         self.setLayout(uklad_pionowy_calosc)
         
 
@@ -382,14 +409,27 @@ class MainWindow(QWidget):
     
     
     def krok_symulacji(self):
+        if not self.running:
+            return
+
+    # Kran 1 → pompa
         p1 = self.krany1.getPoziom()
-        p2 = self.krany2.getPoziom()
-
         if p1 > 0:
-            self.krany1.setPoziom(p1 - self.predkosc_opadania)
+            ubytek = min(self.predkosc_opadania, p1)
+            self.krany1.setPoziom(p1 - ubytek)
+            self.pompa.dodaj_ciecz(ubytek * 100)
 
+    # Kran 2 → pompa
+        p2 = self.krany2.getPoziom()
         if p2 > 0:
-            self.krany2.setPoziom(p2 - self.predkosc_opadania)
+            ubytek = min(self.predkosc_opadania, p2)
+            self.krany2.setPoziom(p2 - ubytek)
+            self.pompa.dodaj_ciecz(ubytek * 100)
+        self.scena.update()
+
+
+
+
 
 
 
