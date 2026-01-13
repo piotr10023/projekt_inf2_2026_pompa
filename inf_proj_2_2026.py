@@ -7,7 +7,9 @@ from PyQt5.QtGui import QPainter, QColor, QPen, QPainterPath
 class Krany(QWidget):
     def __init__(self, parent=None):
         super().__init__(parent)
-        self.setMinimumSize(100, 215)
+        self.setMinimumSize(120, 220)
+        self.setMaximumSize(200, 220)
+
 
         # Parametry geometryczne
         self.top_trapez_h = 30
@@ -276,17 +278,23 @@ class pompa:
         self.aktualizuj_poziom()
 
 class ScenaInstalacji(QWidget):
-    def __init__(self, pompa, parent=None):
+    def __init__(self, pompa, rura_lewa, rura_prawa, parent=None):
         super().__init__(parent)
         self.pompa = pompa
-        self.setMinimumSize(400, 200)
+        self.rura_lewa = rura_lewa
+        self.rura_prawa = rura_prawa
+        self.setMinimumSize(1200, 400)
         self.setStyleSheet("background-color: #222;")
 
     def paintEvent(self, event):
         painter = QPainter(self)
         painter.setRenderHint(QPainter.Antialiasing)
-
+        self.rura_lewa.draw(painter)
+        self.rura_prawa.draw(painter)
+        self.pompa.draw(painter)
        
+
+
         self.pompa.draw(painter)
 
 
@@ -360,15 +368,31 @@ class MainWindow(QWidget):
 
         uklad_pionowy_calosc.addLayout(uklad_kranow)
         
+        # --- RURY ---
+        self.rura_lewa = Rura([
+            (100, 0),   
+            (100, 50),
+            (460, 50),
+            (460, 60)    
+        ])
 
+        self.rura_prawa = Rura([
+            (840, 0),   
+            (840, 50),
+            (490, 50),
+            (490, 60)
+        ])
         
 
         self.pompa = pompa(450, 50, width=50, height=70, nazwa="POMPA")
         self.pompa.aktualna_ilosc = 0.0
         self.pompa.aktualizuj_poziom()
         print(self.pompa.aktualna_ilosc)
-        self.scena = ScenaInstalacji(self.pompa)
+        self.scena = ScenaInstalacji(self.pompa,self.rura_lewa,self.rura_prawa)
         uklad_pionowy_calosc.addWidget(self.scena)
+
+        
+
 
 
 
@@ -418,6 +442,9 @@ class MainWindow(QWidget):
             ubytek = min(self.predkosc_opadania, p1)
             self.krany1.setPoziom(p1 - ubytek)
             self.pompa.dodaj_ciecz(ubytek * 100)
+            self.rura_lewa.ustaw_przeplyw(True)
+        else:
+            self.rura_lewa.ustaw_przeplyw(False)
 
     # Kran 2 → pompa
         p2 = self.krany2.getPoziom()
@@ -425,6 +452,9 @@ class MainWindow(QWidget):
             ubytek = min(self.predkosc_opadania, p2)
             self.krany2.setPoziom(p2 - ubytek)
             self.pompa.dodaj_ciecz(ubytek * 100)
+            self.rura_prawa.ustaw_przeplyw(True)
+        else:
+            self.rura_prawa.ustaw_przeplyw(False)
         self.scena.update()
 
 
