@@ -278,11 +278,13 @@ class pompa:
         self.aktualizuj_poziom()
 
 class ScenaInstalacji(QWidget):
-    def __init__(self, pompa, rura_lewa, rura_prawa, parent=None):
+    def __init__(self, pompa,grzalka, rura_lewa, rura_prawa, rura_pompa_grzalka, parent=None):
         super().__init__(parent)
         self.pompa = pompa
+        self.grzalka = grzalka
         self.rura_lewa = rura_lewa
         self.rura_prawa = rura_prawa
+        self.rura_pompa_grzalka = rura_pompa_grzalka
         self.setMinimumSize(1200, 400)
         self.setStyleSheet("background-color: #222;")
 
@@ -292,6 +294,8 @@ class ScenaInstalacji(QWidget):
         self.rura_lewa.draw(painter)
         self.rura_prawa.draw(painter)
         self.pompa.draw(painter)
+        self.rura_pompa_grzalka.draw(painter)
+        self.grzalka.draw(painter)
        
 
 
@@ -299,6 +303,54 @@ class ScenaInstalacji(QWidget):
 
 
 
+class Grzalka:
+    def __init__(self, x, y, width=50, height=70, nazwa="GRZAŁKA"):
+        self.x = x
+        self.y = y
+        self.width = width
+        self.height = height
+        self.nazwa = nazwa
+
+        self.temperatura = 20.0   # °C
+        self.wlaczona = False
+
+    def wlacz(self):
+        self.wlaczona = True
+
+    def wylacz(self):
+        self.wlaczona = False
+
+    def krok(self):
+        if self.wlaczona:
+            self.temperatura = min(self.temperatura + 0.3, 90)
+        else:
+            self.temperatura = max(self.temperatura - 0.1, 20)
+
+    def kolor_cieczy(self):
+        t = (self.temperatura - 20) / 70
+        r = int(255 * t)
+        b = int(255 * (1 - t))
+        return QColor(r, 50, b)
+
+    def draw(self, painter):
+        # ciecz
+        painter.setPen(Qt.NoPen)
+        painter.setBrush(self.kolor_cieczy())
+        painter.drawRect(
+            int(self.x + 5),
+            int(self.y + 5),
+            int(self.width - 10),
+            int(self.height - 10)
+        )
+
+        pen = QPen(Qt.black, 3)
+        painter.setPen(pen)
+        painter.setBrush(Qt.NoBrush)
+        painter.drawRect(self.x, self.y, self.width, self.height)
+
+        painter.drawText(self.x, self.y - 5, self.nazwa)
+        painter.drawText(self.x, self.y + self.height + 15,
+                         f"{int(self.temperatura)} °C")
 
 
 
@@ -320,7 +372,7 @@ class MainWindow(QWidget):
 
 
         self.running = False
-        self.predkosc_opadania = 0.005  # ile poziomu ubywa na krok
+        self.predkosc_opadania = 0.005  
 
         from PyQt5.QtWidgets import QPushButton
         self.btn_start = QPushButton("START")
@@ -388,8 +440,24 @@ class MainWindow(QWidget):
         self.pompa.aktualna_ilosc = 0.0
         self.pompa.aktualizuj_poziom()
         print(self.pompa.aktualna_ilosc)
-        self.scena = ScenaInstalacji(self.pompa,self.rura_lewa,self.rura_prawa)
+        
+        
+
+        self.grzalka = Grzalka(450,180 )
+
+        self.rura_pompa_grzalka = Rura([
+            (475, 120),   
+            (475, 180),])
+           
+        self.scena = ScenaInstalacji(
+            self.pompa,
+            self.grzalka,
+            self.rura_lewa,
+            self.rura_prawa,
+            self.rura_pompa_grzalka
+        )
         uklad_pionowy_calosc.addWidget(self.scena)
+
 
         
 
@@ -455,7 +523,19 @@ class MainWindow(QWidget):
             self.rura_prawa.ustaw_przeplyw(True)
         else:
             self.rura_prawa.ustaw_przeplyw(False)
+        # pompa -> grzałka
+        if self.pompa.aktualna_ilosc > 1:
+            self.grzalka.wlacz()
+            wydajnosc = 0.3
+            self.pompa.usun_ciecz(wydajnosc)
+            self.rura_pompa_grzalka.ustaw_przeplyw(True)
+        else:
+            self.grzalka.wylacz()
+            self.rura_pompa_grzalka.ustaw_przeplyw(False)
+
+        self.grzalka.krok()
         self.scena.update()
+
 
 
 
