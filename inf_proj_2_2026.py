@@ -278,13 +278,15 @@ class pompa:
         self.aktualizuj_poziom()
 
 class ScenaInstalacji(QWidget):
-    def __init__(self, pompa,grzalka, rura_lewa, rura_prawa, rura_pompa_grzalka, parent=None):
+    def __init__(self, pompa,grzalka, zbiornik_koncowy, rura_lewa, rura_prawa, rura_pompa_grzalka, rura_grzalka_zbiornik, parent=None):
         super().__init__(parent)
         self.pompa = pompa
         self.grzalka = grzalka
+        self.zbiornik_koncowy = zbiornik_koncowy
         self.rura_lewa = rura_lewa
         self.rura_prawa = rura_prawa
         self.rura_pompa_grzalka = rura_pompa_grzalka
+        self.rura_grzalka_zbiornik = rura_grzalka_zbiornik
         self.setMinimumSize(1200, 400)
         self.setStyleSheet("background-color: #222;")
 
@@ -296,6 +298,8 @@ class ScenaInstalacji(QWidget):
         self.pompa.draw(painter)
         self.rura_pompa_grzalka.draw(painter)
         self.grzalka.draw(painter)
+        self.rura_grzalka_zbiornik.draw(painter)
+        self.zbiornik_koncowy.draw(painter)
        
 
 
@@ -448,15 +452,25 @@ class MainWindow(QWidget):
         self.rura_pompa_grzalka = Rura([
             (475, 120),   
             (475, 180),])
-           
-        self.scena = ScenaInstalacji(
-            self.pompa,
-            self.grzalka,
-            self.rura_lewa,
-            self.rura_prawa,
-            self.rura_pompa_grzalka
+
+        self.zbiornik_koncowy = Zbiornik(
+            x=440,
+            y=300,
+            width=70,
+            height=90,
+            nazwa="grzejnik"
         )
-        uklad_pionowy_calosc.addWidget(self.scena)
+
+        self.rura_grzalka_zbiornik = Rura([
+            (475, 250),
+            (475, 300)
+        ])
+
+
+           
+        self.scena = ScenaInstalacji(self.pompa, self.grzalka, self.zbiornik_koncowy,self.rura_lewa, self.rura_prawa, self.rura_pompa_grzalka, self.rura_grzalka_zbiornik)
+            
+        uklad_pionowy_calosc.addWidget(self.scena) 
 
 
         
@@ -464,7 +478,7 @@ class MainWindow(QWidget):
 
 
 
-        self.setLayout(uklad_pionowy_calosc)
+        self.setLayout(uklad_pionowy_calosc) 
         
 
         
@@ -534,6 +548,14 @@ class MainWindow(QWidget):
             self.rura_pompa_grzalka.ustaw_przeplyw(False)
 
         self.grzalka.krok()
+        # grzałka -> zbiornik końcowy
+        if self.pompa.aktualna_ilosc > 0.3:
+            ilosc = self.pompa.usun_ciecz(0.3)
+            self.zbiornik_koncowy.dodaj_ciecz(ilosc)
+            self.rura_grzalka_zbiornik.ustaw_przeplyw(True)
+        else:
+            self.rura_grzalka_zbiornik.ustaw_przeplyw(False)
+
         self.scena.update()
 
 
