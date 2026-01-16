@@ -11,7 +11,7 @@ class Krany(QWidget):
         self.setMaximumSize(200, 220)
 
 
-        # Parametry geometryczne
+        
         self.top_trapez_h = 30
         self.rect_h = 100
         self.bot_trapez_h = 30
@@ -46,7 +46,7 @@ class Krany(QWidget):
         cx = self.draw_x + (self.width_top / 2)
         start_y = self.draw_y
 
-        # kształt zbiornika
+        
         path = QPainterPath()
 
         p1_tl = QPointF(cx - self.width_top / 2, start_y)
@@ -69,7 +69,7 @@ class Krany(QWidget):
         path.lineTo(p1_tl)
         path.closeSubpath()
 
-        # ciecz
+        
         painter.save()
         painter.setClipPath(path)
 
@@ -83,7 +83,7 @@ class Krany(QWidget):
         painter.fillRect(rect_liquid, QColor(0, 120, 255, 180))
         painter.restore()
 
-        # obrys
+        
         pen = QPen(Qt.gray, 4)
         painter.setPen(pen)
         painter.drawPath(path)
@@ -178,7 +178,7 @@ class Zbiornik:
                 int(h_cieczy - 2)
             )
 
-        pen = QPen(Qt.white, 4)
+        pen = QPen(Qt.black, 4)
         pen.setJoinStyle(Qt.MiterJoin)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
@@ -189,7 +189,7 @@ class Zbiornik:
             int(self.height)
         )
 
-        painter.setPen(Qt.white)
+        painter.setPen(Qt.black)
         painter.drawText(int(self.x), int(self.y - 10), self.nazwa)
 
     
@@ -253,8 +253,9 @@ class pompa:
                 int(self.width - 6),
                 int(h_cieczy - 2)
             )
+        
 
-        pen = QPen(Qt.white, 4)
+        pen = QPen(Qt.black, 4)
         pen.setJoinStyle(Qt.MiterJoin)
         painter.setPen(pen)
         painter.setBrush(Qt.NoBrush)
@@ -265,7 +266,9 @@ class pompa:
             int(self.height)
         )
 
-        painter.setPen(Qt.white)
+        
+
+        painter.setPen(Qt.black)
         painter.drawText(int(self.x), int(self.y - 10), self.nazwa)
 
     
@@ -315,7 +318,7 @@ class Grzalka:
         self.height = height
         self.nazwa = nazwa
 
-        self.temperatura = 20.0   # °C
+        self.temperatura = 20.0  
         self.wlaczona = False
 
     def wlacz(self):
@@ -337,7 +340,7 @@ class Grzalka:
         return QColor(r, 50, b)
 
     def draw(self, painter):
-        # ciecz
+        
         painter.setPen(Qt.NoPen)
         painter.setBrush(self.kolor_cieczy())
         painter.drawRect(
@@ -387,7 +390,7 @@ class MainWindow(QWidget):
 
         lewy_uklad = QVBoxLayout()
 
-        # --- kran 1 ---
+        
         self.slider1 = QSlider(Qt.Orientation.Horizontal) 
         self.slider1.setRange(0, 100)
         self.slider1.setValue(50)
@@ -407,7 +410,7 @@ class MainWindow(QWidget):
         prawy_uklad = QVBoxLayout()
        
 
-        # --- kran 2 ---
+        
         self.slider2 = QSlider(Qt.Horizontal)
         self.slider2.setRange(0, 100)
         self.slider2.setValue(50)
@@ -424,7 +427,7 @@ class MainWindow(QWidget):
 
         uklad_pionowy_calosc.addLayout(uklad_kranow)
         
-        # --- RURY ---
+        
         self.rura_lewa = Rura([
             (100, 0),   
             (100, 50),
@@ -472,9 +475,9 @@ class MainWindow(QWidget):
             
         uklad_pionowy_calosc.addWidget(self.scena) 
 
-
-        
-
+        self.btn_oproznij = QPushButton("OPRÓŻNIJ GRZEJNIK")
+        self.btn_oproznij.clicked.connect(self.oproznij_grzejnik)
+        uklad_pionowy_calosc.addWidget(self.btn_oproznij)
 
 
 
@@ -518,7 +521,8 @@ class MainWindow(QWidget):
         if not self.running:
             return
 
-    # Kran 1 → pompa
+    
+        # Kran 1 → pompa
         p1 = self.krany1.getPoziom()
         if p1 > 0:
             ubytek = min(self.predkosc_opadania, p1)
@@ -555,8 +559,25 @@ class MainWindow(QWidget):
             self.rura_grzalka_zbiornik.ustaw_przeplyw(True)
         else:
             self.rura_grzalka_zbiornik.ustaw_przeplyw(False)
-
         self.scena.update()
+            
+        
+        # GRZJNIK OPROZNIEJ
+    def oproznij_grzejnik(self):
+        self.timer.stop()
+        self.running = False
+        self.btn_start.setText("START")
+
+        self.zbiornik_koncowy.oproznij()
+        
+        self.scena.update()
+
+  
+            
+            
+            
+   
+
 
 
 
